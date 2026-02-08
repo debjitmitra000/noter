@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNotesContext } from '../context/NotesContext';
 import { useAutoSave } from '../hooks/useAutoSave';
-import { CheckCircle2, Circle, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, Copy, Edit2, Check, X, Heading } from 'lucide-react';
 
 const ChecklistEditor = () => {
   const { currentNote, updateNote } = useNotesContext();
@@ -9,6 +9,8 @@ const ChecklistEditor = () => {
   const [todos, setTodos] = useState([]);
   const [category, setCategory] = useState('General');
   const [inputValue, setInputValue] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editingText, setEditingText] = useState('');
 
   const { save, saving } = useAutoSave(async (data) => {
     if (currentNote) {
@@ -42,7 +44,7 @@ const ChecklistEditor = () => {
     setCategory(e.target.value);
   };
 
-  const parseInput = (input) => {
+  const parseInput = (input, itemType = 'todo') => {
     if (!input.trim()) return;
 
     const lines = input
@@ -50,19 +52,35 @@ const ChecklistEditor = () => {
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
 
-    const newTodos = lines.map((text) => ({
-      id: `todo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      text,
-      completed: false,
-      createdAt: new Date().toISOString(),
-    }));
+    const newItems = lines.map((text) => {
+      if (itemType === 'heading') {
+        return {
+          id: `heading_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          text,
+          type: 'heading',
+          createdAt: new Date().toISOString(),
+        };
+      } else {
+        return {
+          id: `todo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          text,
+          completed: false,
+          type: 'todo',
+          createdAt: new Date().toISOString(),
+        };
+      }
+    });
 
-    setTodos((prev) => [...prev, ...newTodos]);
+    setTodos((prev) => [...prev, ...newItems]);
     setInputValue('');
   };
 
   const handleAddTodo = () => {
-    parseInput(inputValue);
+    parseInput(inputValue, 'todo');
+  };
+
+  const handleAddHeading = () => {
+    parseInput(inputValue, 'heading');
   };
 
   const handleInputKeyDown = (e) => {
@@ -84,8 +102,47 @@ const ChecklistEditor = () => {
     setTodos((prev) => prev.filter((todo) => todo.id !== id));
   };
 
-  const completedCount = todos.filter((todo) => todo.completed).length;
-  const totalCount = todos.length;
+  const startEditing = (todo) => {
+    setEditingId(todo.id);
+    setEditingText(todo.text);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingText('');
+  };
+
+  const saveEdit = (id) => {
+    if (editingText.trim()) {
+      setTodos((prev) =>
+        prev.map((todo) =>
+          todo.id === id ? { ...todo, text: editingText.trim() } : todo
+        )
+      );
+    }
+    cancelEditing();
+  };
+
+  const handleEditKeyDown = (e, id) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit(id);
+    } else if (e.key === 'Escape') {
+      cancelEditing();
+    }
+  };
+
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      // Optional: Add a toast notification here
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const completedCount = todos.filter((todo) => todo.type === 'todo' && todo.completed).length;
+  const totalCount = todos.filter((todo) => todo.type === 'todo').length;
 
   if (!currentNote) {
     return (
@@ -136,31 +193,143 @@ const ChecklistEditor = () => {
         </div>
 
         <div className="todos-list">
-          {todos.map((todo) => (
-            <div key={todo.id} className="todo-item">
-              <button
-                className="todo-checkbox"
-                onClick={() => toggleTodoComplete(todo.id)}
-              >
-                {todo.completed ? (
-                  <CheckCircle2 size={24} className="icon-checked" />
+          {todos.map((item) => {
+            if (item.type === 'heading') {
+              return (
+                <div key={item.id} className="todo-heading-item">
+                  {editingId === item.id ? (
+                    <div className="todo-edit-mode">
+                      <input
+                        type="text"
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        onKeyDown={(e) => handleEditKeyDown(e, item.id)}
+                        className="todo-edit-input heading-edit"
+                        autoFocus
+                      />
+                      <div className="todo-edit-actions">
+                        <button
+                          className="btn-icon-small success"
+                          onClick={() => saveEdit(item.id)}
+                        >
+                          <Check size={16} />
+                        </button>
+                        <button
+                          className="btn-icon-small"
+                          onClick={cancelEditing}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Heading size={18} className="heading-icon" />
+                      <h3 className="todo-heading-text">{item.text}</h3>
+                      <div className="todo-item-actions">
+                        <button
+                          className="btn-icon-small"
+                          onClick={() => startEditing(item)}
+                          title="Edit heading"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          className="btn-icon-small danger"
+                          onClick={() => deleteTodo(item.id)}
+                          title="Delete heading"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <div key={item.id} className="todo-item">
+                {editingId === item.id ? (
+                  <div className="todo-edit-mode">
+                    <button
+                      className="todo-checkbox"
+                      onClick={() => toggleTodoComplete(item.id)}
+                    >
+                      {item.completed ? (
+                        <CheckCircle2 size={24} className="icon-checked" />
+                      ) : (
+                        <Circle size={24} className="icon-unchecked" />
+                      )}
+                    </button>
+                    <input
+                      type="text"
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      onKeyDown={(e) => handleEditKeyDown(e, item.id)}
+                      className="todo-edit-input"
+                      autoFocus
+                    />
+                    <div className="todo-edit-actions">
+                      <button
+                        className="btn-icon-small success"
+                        onClick={() => saveEdit(item.id)}
+                      >
+                        <Check size={16} />
+                      </button>
+                      <button
+                        className="btn-icon-small"
+                        onClick={cancelEditing}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  <Circle size={24} className="icon-unchecked" />
+                  <>
+                    <button
+                      className="todo-checkbox"
+                      onClick={() => toggleTodoComplete(item.id)}
+                    >
+                      {item.completed ? (
+                        <CheckCircle2 size={24} className="icon-checked" />
+                      ) : (
+                        <Circle size={24} className="icon-unchecked" />
+                      )}
+                    </button>
+                    <span
+                      className={`todo-text ${item.completed ? 'completed' : ''}`}
+                    >
+                      {item.text}
+                    </span>
+                    <div className="todo-item-actions">
+                      <button
+                        className="btn-icon-small"
+                        onClick={() => copyToClipboard(item.text)}
+                        title="Copy to clipboard"
+                      >
+                        <Copy size={14} />
+                      </button>
+                      <button
+                        className="btn-icon-small"
+                        onClick={() => startEditing(item)}
+                        title="Edit todo"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        className="btn-icon-small danger"
+                        onClick={() => deleteTodo(item.id)}
+                        title="Delete todo"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </>
                 )}
-              </button>
-              <span
-                className={`todo-text ${todo.completed ? 'completed' : ''}`}
-              >
-                {todo.text}
-              </span>
-              <button
-                className="btn-icon-small danger"
-                onClick={() => deleteTodo(todo.id)}
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
 
         <div className="checklist-input-section">
@@ -168,7 +337,7 @@ const ChecklistEditor = () => {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleInputKeyDown}
-            placeholder="Type items here. Press Shift+Enter to add multiple items at once, or paste lines separated by breaks."
+            placeholder="Type items or headings here. Press Shift+Enter or click a button below to add them."
             className="checklist-input"
           />
           <div className="checklist-input-actions">
@@ -180,9 +349,14 @@ const ChecklistEditor = () => {
               <Plus size={18} />
               Add Items
             </button>
-            <span className="hint-text">
-              Tip: Paste multiple lines or press Shift+Enter to add all at once
-            </span>
+            <button
+              onClick={handleAddHeading}
+              className="btn-add-heading"
+              disabled={!inputValue.trim()}
+            >
+              <Heading size={18} />
+              Add Heading
+            </button>
           </div>
         </div>
       </div>

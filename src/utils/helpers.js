@@ -11,6 +11,25 @@ export const generatePreview = (content, length = 100) => {
   return plainText.substring(0, length) + '...';
 };
 
+export const generateChecklistPreview = (todos) => {
+  if (!todos || todos.length === 0) {
+    return 'Empty checklist';
+  }
+
+  const todoItems = todos.filter(item => item.type === 'todo' || !item.type);
+  const completedCount = todoItems.filter(item => item.completed).length;
+  const totalCount = todoItems.length;
+
+  if (totalCount === 0) {
+    return 'No items yet';
+  }
+
+  const firstItems = todoItems.slice(0, 2).map(item => item.text).join(', ');
+  const preview = totalCount > 2 ? `${firstItems}...` : firstItems;
+
+  return `${completedCount}/${totalCount} items • ${preview}`;
+};
+
 export const getRelativeTime = (timestamp) => {
   const now = new Date();
   const date = new Date(timestamp);

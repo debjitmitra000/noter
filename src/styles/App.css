@@ -19,6 +19,7 @@
   --warning-color: #ffc107;
   --shadow: rgba(0, 0, 0, 0.1);
   --transition: all 0.2s ease;
+  --primary-color: #007bff; /* Added for compatibility */
 }
 
 body.dark-mode {
@@ -32,6 +33,7 @@ body.dark-mode {
   --accent-color: #4a9eff;
   --accent-hover: #357abd;
   --shadow: rgba(0, 0, 0, 0.3);
+  --primary-color: #4a9eff; /* Added for compatibility */
 }
 
 body {
@@ -213,6 +215,7 @@ body {
   border-radius: 8px;
   cursor: pointer;
   transition: var(--transition);
+  position: relative; /* Added for better actions positioning */
 }
 
 .note-item:hover {
@@ -614,6 +617,14 @@ body {
   background-color: rgba(220, 53, 69, 0.1);
 }
 
+.btn-icon-small.success {
+  color: #10b981;
+}
+
+.btn-icon-small.success:hover {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
 .btn-text-small {
   padding: 4px 8px;
   border: none;
@@ -711,6 +722,7 @@ body {
   border-radius: 6px;
   background-color: var(--bg-secondary);
   transition: var(--transition);
+  position: relative;
 }
 
 .todo-item:hover {
@@ -826,6 +838,176 @@ body {
   display: flex;
   gap: 12px;
 }
+
+/* ========================================
+   NEW FEATURES STYLES
+   ======================================== */
+
+/* Checklist Heading Styles */
+.todo-heading-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 12px 12px;
+  margin-top: 20px;
+  margin-bottom: 8px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.heading-icon {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.todo-heading-text {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.todo-heading-item .todo-item-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.todo-heading-item:hover .todo-item-actions {
+  opacity: 1;
+}
+
+/* Todo Edit Mode */
+.todo-edit-mode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  width: 100%;
+}
+
+.todo-edit-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid var(--primary-color);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.todo-edit-input.heading-edit {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.todo-edit-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* Todo Item Actions */
+.todo-item-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  margin-left: auto;
+}
+
+.todo-item:hover .todo-item-actions {
+  opacity: 1;
+}
+
+/* Add Heading Button */
+.btn-add-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-heading:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--primary-color);
+}
+
+/* Delete Confirmation Modal */
+.delete-confirm-modal {
+  max-width: 450px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-secondary {
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-tertiary);
+}
+
+.btn-danger {
+  padding: 10px 20px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+/* Dark mode support for new features */
+.dark-mode .todo-heading-item {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .todo-edit-input {
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+}
+
+.dark-mode .btn-add-heading {
+  background: var(--bg-tertiary);
+}
+
+.dark-mode .btn-add-heading:hover {
+  background: var(--bg-secondary);
+}
+
+/* ========================================
+   RESPONSIVE STYLES
+   ======================================== */
 
 @media (max-width: 768px) {
   .sidebar {

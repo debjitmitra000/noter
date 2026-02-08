@@ -5,7 +5,7 @@ import NoteEditor from './components/NoteEditor';
 import './styles/App.css';
 
 const AppContent = () => {
-  const { addNote, darkMode, setDarkMode, currentNote, loadNotes } = useNotesContext();
+  const { addNote, darkMode, setDarkMode } = useNotesContext();
 
   useEffect(() => {
     const handleKeyDown = (e) => {
