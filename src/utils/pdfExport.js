@@ -146,3 +146,70 @@ export const exportMultipleNotesToPDF = (notes) => {
 export const exportAllNotesToPDF = (notes) => {
   exportMultipleNotesToPDF(notes);
 };
+
+export const exportChecklistToPDF = (note) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 20;
+  const maxWidth = pageWidth - 2 * margin;
+  let yPosition = margin;
+
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  yPosition = addTextWithWrapping(doc, note.title, margin, yPosition, maxWidth, 10);
+  yPosition += 5;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100);
+  doc.text(`Created: ${formatDate(note.created_at)}`, margin, yPosition);
+  yPosition += 7;
+
+  if (note.category) {
+    doc.text(`Category: ${note.category}`, margin, yPosition);
+    yPosition += 10;
+  } else {
+    yPosition += 5;
+  }
+
+  doc.setDrawColor(200);
+  doc.line(margin, yPosition, pageWidth - margin, yPosition);
+  yPosition += 10;
+
+  doc.setFontSize(11);
+  doc.setTextColor(0);
+  doc.setFont('helvetica', 'normal');
+
+  const todos = note.todos || [];
+  const completedCount = todos.filter((todo) => todo.completed).length;
+
+  if (todos.length > 0) {
+    doc.setFontSize(10);
+    doc.text(`Progress: ${completedCount} of ${todos.length} completed`, margin, yPosition);
+    yPosition += 8;
+
+    todos.forEach((todo) => {
+      if (yPosition > pageHeight - margin) {
+        doc.addPage();
+        yPosition = margin;
+      }
+
+      const checkbox = todo.completed ? '[x]' : '[ ]';
+      const todoText = `${checkbox} ${todo.text}`;
+      const lines = doc.splitTextToSize(todoText, maxWidth - 10);
+
+      if (todo.completed) {
+        doc.setTextColor(150);
+      } else {
+        doc.setTextColor(0);
+      }
+
+      doc.text(lines, margin + 5, yPosition);
+      yPosition += lines.length * 6 + 3;
+    });
+  }
+
+  const filename = `${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_checklist.pdf`;
+  doc.save(filename);
+};

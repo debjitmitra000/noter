@@ -1,5 +1,5 @@
 import { useNotesContext } from '../context/NotesContext';
-import { exportNoteToPDF, exportAllNotesToPDF } from '../utils/pdfExport';
+import { exportNoteToPDF, exportAllNotesToPDF, exportChecklistToPDF } from '../utils/pdfExport';
 import { exportNotesAsJSON, importNotesFromJSON } from '../utils/helpers';
 import { X, FileText, Files, Database, Upload } from 'lucide-react';
 
@@ -8,7 +8,11 @@ const ExportModal = ({ onClose }) => {
 
   const handleExportCurrentNote = () => {
     if (currentNote) {
-      exportNoteToPDF(currentNote);
+      if (currentNote.type === 'checklist') {
+        exportChecklistToPDF(currentNote);
+      } else {
+        exportNoteToPDF(currentNote);
+      }
       onClose();
     }
   };

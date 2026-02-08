@@ -15,10 +15,12 @@ import {
   EyeOff,
   Moon,
   Sun,
+  CheckSquare,
+  FileText,
 } from 'lucide-react';
 import ExportModal from './ExportModal';
 
-const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview }) => {
+const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onChangeNoteType }) => {
   const { currentNote, duplicateNote, togglePin, toggleFavorite, darkMode, setDarkMode } =
     useNotesContext();
   const [showExportModal, setShowExportModal] = useState(false);
@@ -86,6 +88,25 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview }) => {
             title="Quote"
           >
             <Quote size={18} />
+          </button>
+        </div>
+
+        <div className="toolbar-divider" />
+
+        <div className="toolbar-group">
+          <button
+            onClick={() => onChangeNoteType('note')}
+            className={`toolbar-btn ${noteType === 'note' ? 'active' : ''}`}
+            title="Note Mode"
+          >
+            <FileText size={18} />
+          </button>
+          <button
+            onClick={() => onChangeNoteType('checklist')}
+            className={`toolbar-btn ${noteType === 'checklist' ? 'active' : ''}`}
+            title="Checklist Mode"
+          >
+            <CheckSquare size={18} />
           </button>
         </div>
 

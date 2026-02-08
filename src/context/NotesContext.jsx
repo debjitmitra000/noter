@@ -72,6 +72,8 @@ export const NotesProvider = ({ children }) => {
         content: noteData.content || '',
         tags: noteData.tags || [],
         category: noteData.category || 'General',
+        type: noteData.type || 'note',
+        todos: noteData.todos || [],
         is_pinned: false,
         is_favorite: false,
         is_deleted: false,

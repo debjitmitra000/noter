@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNotesContext } from '../context/NotesContext';
 import { useAutoSave } from '../hooks/useAutoSave';
 import Toolbar from './Toolbar';
+import ChecklistEditor from './ChecklistEditor';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { extractTagsFromContent, countWords, countCharacters } from '../utils/helpers';
+import { CheckSquare, FileText } from 'lucide-react';
 
 const NoteEditor = () => {
   const { currentNote, updateNote } = useNotesContext();
@@ -14,6 +16,7 @@ const NoteEditor = () => {
   const [tags, setTags] = useState([]);
   const [category, setCategory] = useState('General');
   const [previewMode, setPreviewMode] = useState(false);
+  const [noteType, setNoteType] = useState('note');
 
   const { save, saving, lastSaved } = useAutoSave(async (data) => {
     if (currentNote) {
@@ -27,6 +30,7 @@ const NoteEditor = () => {
       setContent(currentNote.content);
       setTags(currentNote.tags || []);
       setCategory(currentNote.category || 'General');
+      setNoteType(currentNote.type || 'note');
     }
   }, [currentNote]);
 
@@ -40,9 +44,15 @@ const NoteEditor = () => {
         content,
         tags: uniqueTags,
         category,
+        type: noteType,
       });
     }
-  }, [title, content, category]);
+  }, [title, content, category, noteType]);
+
+  const handleChangeNoteType = (newType) => {
+    setNoteType(newType);
+    updateNote(currentNote.id, { type: newType });
+  };
 
   const handleTitleChange = (e) => {
     setTitle(e.target.value);
@@ -106,6 +116,10 @@ const NoteEditor = () => {
     );
   }
 
+  if (noteType === 'checklist') {
+    return <ChecklistEditor />;
+  }
+
   const wordCount = countWords(content);
   const charCount = countCharacters(content);
 
@@ -115,6 +129,8 @@ const NoteEditor = () => {
         onInsertMarkdown={insertMarkdown}
         previewMode={previewMode}
         onTogglePreview={() => setPreviewMode(!previewMode)}
+        noteType={noteType}
+        onChangeNoteType={handleChangeNoteType}
       />
 
       <div className="editor-header">
