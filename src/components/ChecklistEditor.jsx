@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNotesContext } from '../context/NotesContext';
 import { useAutoSave } from '../hooks/useAutoSave';
-import { CheckCircle2, Circle, Plus, Trash2, Copy, Edit2, Check, X, Heading } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, Copy, Edit2, Check, X, Heading, Calendar, GripVertical, ChevronRight, ChevronDown } from 'lucide-react';
 
 const ChecklistEditor = () => {
   const { currentNote, updateNote } = useNotesContext();
@@ -11,6 +11,7 @@ const ChecklistEditor = () => {
   const [inputValue, setInputValue] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingText, setEditingText] = useState('');
+  const [draggedItem, setDraggedItem] = useState(null);
 
   const { save, saving } = useAutoSave(async (data) => {
     if (currentNote) {
@@ -66,6 +67,9 @@ const ChecklistEditor = () => {
           text,
           completed: false,
           type: 'todo',
+          dueDate: null,
+          parentId: null,
+          collapsed: false,
           createdAt: new Date().toISOString(),
         };
       }
@@ -99,7 +103,7 @@ const ChecklistEditor = () => {
   };
 
   const deleteTodo = (id) => {
-    setTodos((prev) => prev.filter((todo) => todo.id !== id));
+    setTodos((prev) => prev.filter((todo) => todo.id !== id && todo.parentId !== id));
   };
 
   const startEditing = (todo) => {
@@ -135,14 +139,79 @@ const ChecklistEditor = () => {
   const copyToClipboard = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
-      // Optional: Add a toast notification here
     } catch (err) {
       console.error('Failed to copy:', err);
     }
   };
 
-  const completedCount = todos.filter((todo) => todo.type === 'todo' && todo.completed).length;
-  const totalCount = todos.filter((todo) => todo.type === 'todo').length;
+  const setDueDate = (id, date) => {
+    setTodos((prev) =>
+      prev.map((todo) =>
+        todo.id === id ? { ...todo, dueDate: date } : todo
+      )
+    );
+  };
+
+  const addSubtask = (parentId) => {
+    const newSubtask = {
+      id: `todo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      text: 'New subtask',
+      completed: false,
+      type: 'todo',
+      dueDate: null,
+      parentId: parentId,
+      collapsed: false,
+      createdAt: new Date().toISOString(),
+    };
+    setTodos((prev) => [...prev, newSubtask]);
+    setEditingId(newSubtask.id);
+    setEditingText(newSubtask.text);
+  };
+
+  const toggleCollapse = (id) => {
+    setTodos((prev) =>
+      prev.map((todo) =>
+        todo.id === id ? { ...todo, collapsed: !todo.collapsed } : todo
+      )
+    );
+  };
+
+  const handleDragStart = (e, item) => {
+    setDraggedItem(item);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetItem) => {
+    e.preventDefault();
+    if (!draggedItem || draggedItem.id === targetItem.id) return;
+
+    const dragIndex = todos.findIndex(t => t.id === draggedItem.id);
+    const targetIndex = todos.findIndex(t => t.id === targetItem.id);
+
+    const newTodos = [...todos];
+    newTodos.splice(dragIndex, 1);
+    newTodos.splice(targetIndex, 0, draggedItem);
+
+    setTodos(newTodos);
+    setDraggedItem(null);
+  };
+
+  const isOverdue = (dueDate) => {
+    if (!dueDate) return false;
+    return new Date(dueDate) < new Date();
+  };
+
+  const getSubtasks = (parentId) => {
+    return todos.filter(todo => todo.parentId === parentId);
+  };
+
+  const completedCount = todos.filter((todo) => todo.type === 'todo' && todo.completed && !todo.parentId).length;
+  const totalCount = todos.filter((todo) => todo.type === 'todo' && !todo.parentId).length;
 
   if (!currentNote) {
     return (
@@ -151,6 +220,196 @@ const ChecklistEditor = () => {
       </div>
     );
   }
+
+  const renderTodoItem = (item, level = 0) => {
+    const subtasks = getSubtasks(item.id);
+    const hasSubtasks = subtasks.length > 0;
+    const isCollapsed = item.collapsed;
+
+    if (item.type === 'heading') {
+      return (
+        <div key={item.id} className="todo-heading-item">
+          {editingId === item.id ? (
+            <div className="todo-edit-mode">
+              <input
+                type="text"
+                value={editingText}
+                onChange={(e) => setEditingText(e.target.value)}
+                onKeyDown={(e) => handleEditKeyDown(e, item.id)}
+                className="todo-edit-input heading-edit"
+                autoFocus
+              />
+              <div className="todo-edit-actions">
+                <button
+                  className="btn-icon-small success"
+                  onClick={() => saveEdit(item.id)}
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  className="btn-icon-small"
+                  onClick={cancelEditing}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Heading size={18} className="heading-icon" />
+              <h3 className="todo-heading-text">{item.text}</h3>
+              <div className="todo-item-actions">
+                <button
+                  className="btn-icon-small"
+                  onClick={() => startEditing(item)}
+                  title="Edit heading"
+                >
+                  <Edit2 size={14} />
+                </button>
+                <button
+                  className="btn-icon-small danger"
+                  onClick={() => deleteTodo(item.id)}
+                  title="Delete heading"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div key={item.id}>
+        <div
+          className={`todo-item ${level > 0 ? 'todo-subtask' : ''} ${isOverdue(item.dueDate) && !item.completed ? 'todo-overdue' : ''}`}
+          style={{ marginLeft: `${level * 24}px` }}
+          draggable={level === 0}
+          onDragStart={(e) => handleDragStart(e, item)}
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, item)}
+        >
+          {level === 0 && (
+            <div className="drag-handle">
+              <GripVertical size={16} />
+            </div>
+          )}
+          
+          {hasSubtasks && (
+            <button
+              className="collapse-btn"
+              onClick={() => toggleCollapse(item.id)}
+            >
+              {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+            </button>
+          )}
+
+          {editingId === item.id ? (
+            <div className="todo-edit-mode">
+              <button
+                className="todo-checkbox"
+                onClick={() => toggleTodoComplete(item.id)}
+              >
+                {item.completed ? (
+                  <CheckCircle2 size={24} className="icon-checked" />
+                ) : (
+                  <Circle size={24} className="icon-unchecked" />
+                )}
+              </button>
+              <input
+                type="text"
+                value={editingText}
+                onChange={(e) => setEditingText(e.target.value)}
+                onKeyDown={(e) => handleEditKeyDown(e, item.id)}
+                className="todo-edit-input"
+                autoFocus
+              />
+              <div className="todo-edit-actions">
+                <button
+                  className="btn-icon-small success"
+                  onClick={() => saveEdit(item.id)}
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  className="btn-icon-small"
+                  onClick={cancelEditing}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <button
+                className="todo-checkbox"
+                onClick={() => toggleTodoComplete(item.id)}
+              >
+                {item.completed ? (
+                  <CheckCircle2 size={24} className="icon-checked" />
+                ) : (
+                  <Circle size={24} className="icon-unchecked" />
+                )}
+              </button>
+              <span
+                className={`todo-text ${item.completed ? 'completed' : ''}`}
+              >
+                {item.text}
+              </span>
+              {item.dueDate && (
+                <span className={`due-date ${isOverdue(item.dueDate) && !item.completed ? 'overdue' : ''}`}>
+                  <Calendar size={12} />
+                  {new Date(item.dueDate).toLocaleDateString()}
+                </span>
+              )}
+              <div className="todo-item-actions">
+                <input
+                  type="date"
+                  value={item.dueDate || ''}
+                  onChange={(e) => setDueDate(item.id, e.target.value)}
+                  className="due-date-input"
+                  title="Set due date"
+                />
+                {level === 0 && (
+                  <button
+                    className="btn-icon-small"
+                    onClick={() => addSubtask(item.id)}
+                    title="Add subtask"
+                  >
+                    <Plus size={14} />
+                  </button>
+                )}
+                <button
+                  className="btn-icon-small"
+                  onClick={() => copyToClipboard(item.text)}
+                  title="Copy to clipboard"
+                >
+                  <Copy size={14} />
+                </button>
+                <button
+                  className="btn-icon-small"
+                  onClick={() => startEditing(item)}
+                  title="Edit todo"
+                >
+                  <Edit2 size={14} />
+                </button>
+                <button
+                  className="btn-icon-small danger"
+                  onClick={() => deleteTodo(item.id)}
+                  title="Delete todo"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {hasSubtasks && !isCollapsed && subtasks.map(subtask => renderTodoItem(subtask, level + 1))}
+      </div>
+    );
+  };
 
   return (
     <div className="note-editor">
@@ -193,143 +452,7 @@ const ChecklistEditor = () => {
         </div>
 
         <div className="todos-list">
-          {todos.map((item) => {
-            if (item.type === 'heading') {
-              return (
-                <div key={item.id} className="todo-heading-item">
-                  {editingId === item.id ? (
-                    <div className="todo-edit-mode">
-                      <input
-                        type="text"
-                        value={editingText}
-                        onChange={(e) => setEditingText(e.target.value)}
-                        onKeyDown={(e) => handleEditKeyDown(e, item.id)}
-                        className="todo-edit-input heading-edit"
-                        autoFocus
-                      />
-                      <div className="todo-edit-actions">
-                        <button
-                          className="btn-icon-small success"
-                          onClick={() => saveEdit(item.id)}
-                        >
-                          <Check size={16} />
-                        </button>
-                        <button
-                          className="btn-icon-small"
-                          onClick={cancelEditing}
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <Heading size={18} className="heading-icon" />
-                      <h3 className="todo-heading-text">{item.text}</h3>
-                      <div className="todo-item-actions">
-                        <button
-                          className="btn-icon-small"
-                          onClick={() => startEditing(item)}
-                          title="Edit heading"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          className="btn-icon-small danger"
-                          onClick={() => deleteTodo(item.id)}
-                          title="Delete heading"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            }
-
-            return (
-              <div key={item.id} className="todo-item">
-                {editingId === item.id ? (
-                  <div className="todo-edit-mode">
-                    <button
-                      className="todo-checkbox"
-                      onClick={() => toggleTodoComplete(item.id)}
-                    >
-                      {item.completed ? (
-                        <CheckCircle2 size={24} className="icon-checked" />
-                      ) : (
-                        <Circle size={24} className="icon-unchecked" />
-                      )}
-                    </button>
-                    <input
-                      type="text"
-                      value={editingText}
-                      onChange={(e) => setEditingText(e.target.value)}
-                      onKeyDown={(e) => handleEditKeyDown(e, item.id)}
-                      className="todo-edit-input"
-                      autoFocus
-                    />
-                    <div className="todo-edit-actions">
-                      <button
-                        className="btn-icon-small success"
-                        onClick={() => saveEdit(item.id)}
-                      >
-                        <Check size={16} />
-                      </button>
-                      <button
-                        className="btn-icon-small"
-                        onClick={cancelEditing}
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <button
-                      className="todo-checkbox"
-                      onClick={() => toggleTodoComplete(item.id)}
-                    >
-                      {item.completed ? (
-                        <CheckCircle2 size={24} className="icon-checked" />
-                      ) : (
-                        <Circle size={24} className="icon-unchecked" />
-                      )}
-                    </button>
-                    <span
-                      className={`todo-text ${item.completed ? 'completed' : ''}`}
-                    >
-                      {item.text}
-                    </span>
-                    <div className="todo-item-actions">
-                      <button
-                        className="btn-icon-small"
-                        onClick={() => copyToClipboard(item.text)}
-                        title="Copy to clipboard"
-                      >
-                        <Copy size={14} />
-                      </button>
-                      <button
-                        className="btn-icon-small"
-                        onClick={() => startEditing(item)}
-                        title="Edit todo"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button
-                        className="btn-icon-small danger"
-                        onClick={() => deleteTodo(item.id)}
-                        title="Delete todo"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
+          {todos.filter(item => !item.parentId).map((item) => renderTodoItem(item))}
         </div>
 
         <div className="checklist-input-section">

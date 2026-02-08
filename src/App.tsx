@@ -5,7 +5,7 @@ import NoteEditor from './components/NoteEditor';
 import './styles/App.css';
 
 const AppContent = () => {
-  const { addNote, darkMode, setDarkMode } = useNotesContext();
+  const { addNote, darkMode, setDarkMode, focusMode, setFocusMode } = useNotesContext();
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -14,7 +14,7 @@ const AppContent = () => {
         addNote();
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f' && !focusMode) {
         e.preventDefault();
         const searchInput = document.querySelector('.search-input');
         if (searchInput) {
@@ -26,11 +26,20 @@ const AppContent = () => {
         e.preventDefault();
         setDarkMode(!darkMode);
       }
+
+      if (e.key === 'F11') {
+        e.preventDefault();
+        setFocusMode(!focusMode);
+      }
+
+      if (e.key === 'Escape' && focusMode) {
+        setFocusMode(false);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [addNote, darkMode, setDarkMode]);
+  }, [addNote, darkMode, setDarkMode, focusMode, setFocusMode]);
 
   return (
     <div className="app-container">

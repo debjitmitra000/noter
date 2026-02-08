@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNotesContext } from '../context/NotesContext';
-import { Star, Trash2, Pin } from 'lucide-react';
+import { Star, Trash2, Pin, Palette } from 'lucide-react';
 import { getRelativeTime, generatePreview, generateChecklistPreview } from '../utils/helpers';
 import DeleteConfirmModal from './DeleteConfirmModal';
+import ColorPicker from './ColorPicker';
 
 const NoteList = () => {
   const {
@@ -12,9 +13,12 @@ const NoteList = () => {
     toggleFavorite,
     togglePin,
     getFilteredNotes,
+    updateNote,
+    viewMode,
   } = useNotesContext();
 
   const [deleteModal, setDeleteModal] = useState({ show: false, noteId: null, noteTitle: '' });
+  const [colorPickerNote, setColorPickerNote] = useState(null);
 
   const filteredNotes = getFilteredNotes();
 
@@ -48,6 +52,16 @@ const NoteList = () => {
     await togglePin(noteId);
   };
 
+  const handleColorPickerToggle = (e, noteId) => {
+    e.stopPropagation();
+    setColorPickerNote(colorPickerNote === noteId ? null : noteId);
+  };
+
+  const handleColorSelect = (noteId, color) => {
+    updateNote(noteId, { color });
+    setColorPickerNote(null);
+  };
+
   if (filteredNotes.length === 0) {
     return (
       <div className="notes-list">
@@ -60,7 +74,7 @@ const NoteList = () => {
 
   return (
     <>
-      <div className="notes-list">
+      <div className={`notes-list ${viewMode === 'list' ? 'list-view' : 'card-view'}`}>
         {filteredNotes.map((note) => {
           const preview = note.type === 'checklist' 
             ? generateChecklistPreview(note.todos || [])
@@ -71,10 +85,34 @@ const NoteList = () => {
               key={note.id}
               className={`note-item ${currentNote?.id === note.id ? 'active' : ''}`}
               onClick={() => handleNoteClick(note)}
+              style={{
+                borderLeftColor: note.color || 'transparent',
+                borderLeftWidth: note.color ? '4px' : '1px',
+              }}
             >
               <div className="note-item-header">
                 <h3 className="note-item-title">{note.title}</h3>
                 <div className="note-item-actions">
+                  <div className="color-picker-wrapper">
+                    <button
+                      onClick={(e) => handleColorPickerToggle(e, note.id)}
+                      className={`btn-icon-small ${note.color ? 'has-color' : ''}`}
+                      title="Set color"
+                      style={{
+                        color: note.color || 'var(--text-secondary)',
+                      }}
+                    >
+                      <Palette size={14} />
+                    </button>
+                    {colorPickerNote === note.id && (
+                      <div className="note-color-picker-container">
+                        <ColorPicker
+                          onSelectColor={(color) => handleColorSelect(note.id, color)}
+                          onClose={() => setColorPickerNote(null)}
+                        />
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={(e) => handleTogglePin(e, note.id)}
                     className={`btn-icon-small ${note.is_pinned ? 'active' : ''}`}
@@ -98,7 +136,9 @@ const NoteList = () => {
                   </button>
                 </div>
               </div>
-              <p className="note-item-preview">{preview}</p>
+              {viewMode === 'card' && (
+                <p className="note-item-preview">{preview}</p>
+              )}
               <div className="note-item-footer">
                 <span className="note-item-time">{getRelativeTime(note.updated_at)}</span>
                 {note.tags && note.tags.length > 0 && (

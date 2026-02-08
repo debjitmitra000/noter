@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNotesContext } from '../context/NotesContext';
 import {
   Bold,
@@ -17,13 +17,22 @@ import {
   Sun,
   CheckSquare,
   FileText,
+  Maximize,
+  Type,
+  Clock,
+  Play,
+  Pause,
+  RotateCcw,
 } from 'lucide-react';
 import ExportModal from './ExportModal';
+import PomodoroModal from './PomodoroModal';
 
 const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onChangeNoteType }) => {
-  const { currentNote, duplicateNote, togglePin, toggleFavorite, darkMode, setDarkMode } =
+  const { currentNote, duplicateNote, togglePin, toggleFavorite, darkMode, setDarkMode, focusMode, setFocusMode, fontSize, setFontSize } =
     useNotesContext();
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showFontMenu, setShowFontMenu] = useState(false);
+  const [showPomodoroModal, setShowPomodoroModal] = useState(false);
 
   const handleDuplicate = () => {
     if (currentNote) {
@@ -41,6 +50,11 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onC
     if (currentNote) {
       toggleFavorite(currentNote.id);
     }
+  };
+
+  const handleFontSizeChange = (size) => {
+    setFontSize(size);
+    setShowFontMenu(false);
   };
 
   return (
@@ -154,6 +168,54 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onC
 
         <div className="toolbar-group">
           <button
+            onClick={() => setFocusMode(!focusMode)}
+            className={`toolbar-btn ${focusMode ? 'active' : ''}`}
+            title="Focus Mode"
+          >
+            <Maximize size={18} />
+          </button>
+          
+          <div className="font-size-menu">
+            <button
+              onClick={() => setShowFontMenu(!showFontMenu)}
+              className={`toolbar-btn ${showFontMenu ? 'active' : ''}`}
+              title="Font Size"
+            >
+              <Type size={18} />
+            </button>
+            {showFontMenu && (
+              <div className="dropdown-menu">
+                <button
+                  onClick={() => handleFontSizeChange('small')}
+                  className={`dropdown-item ${fontSize === 'small' ? 'active' : ''}`}
+                >
+                  Small
+                </button>
+                <button
+                  onClick={() => handleFontSizeChange('medium')}
+                  className={`dropdown-item ${fontSize === 'medium' ? 'active' : ''}`}
+                >
+                  Medium
+                </button>
+                <button
+                  onClick={() => handleFontSizeChange('large')}
+                  className={`dropdown-item ${fontSize === 'large' ? 'active' : ''}`}
+                >
+                  Large
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setShowPomodoroModal(true)}
+            className="toolbar-btn"
+            title="Pomodoro Timer"
+          >
+            <Clock size={18} />
+          </button>
+
+          <button
             onClick={() => setDarkMode(!darkMode)}
             className="toolbar-btn"
             title={darkMode ? 'Light Mode' : 'Dark Mode'}
@@ -165,6 +227,10 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onC
 
       {showExportModal && (
         <ExportModal onClose={() => setShowExportModal(false)} />
+      )}
+
+      {showPomodoroModal && (
+        <PomodoroModal onClose={() => setShowPomodoroModal(false)} />
       )}
     </>
   );

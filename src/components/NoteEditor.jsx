@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNotesContext } from '../context/NotesContext';
 import { useAutoSave } from '../hooks/useAutoSave';
 import Toolbar from './Toolbar';
@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { extractTagsFromContent, countWords, countCharacters } from '../utils/helpers';
+import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 
 const NoteEditor = () => {
   const { currentNote, updateNote } = useNotesContext();
@@ -16,6 +17,11 @@ const NoteEditor = () => {
   const [category, setCategory] = useState('General');
   const [previewMode, setPreviewMode] = useState(false);
   const [noteType, setNoteType] = useState('note');
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchMatches, setSearchMatches] = useState([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const textareaRef = useRef(null);
 
   const { save, saving, lastSaved } = useAutoSave(async (data) => {
     if (currentNote) {
@@ -47,6 +53,45 @@ const NoteEditor = () => {
       });
     }
   }, [title, content, category, noteType]);
+
+  useEffect(() => {
+    // Ctrl+F to open search
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f' && currentNote && noteType === 'note') {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+      if (e.key === 'Escape' && showSearch) {
+        setShowSearch(false);
+        setSearchQuery('');
+        setSearchMatches([]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSearch, currentNote, noteType]);
+
+  useEffect(() => {
+    if (searchQuery && content) {
+      const matches = [];
+      const regex = new RegExp(searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      let match;
+      
+      while ((match = regex.exec(content)) !== null) {
+        matches.push({
+          index: match.index,
+          text: match[0],
+        });
+      }
+      
+      setSearchMatches(matches);
+      setCurrentMatchIndex(0);
+    } else {
+      setSearchMatches([]);
+      setCurrentMatchIndex(0);
+    }
+  }, [searchQuery, content]);
 
   const handleChangeNoteType = (newType) => {
     setNoteType(newType);
@@ -104,6 +149,36 @@ const NoteEditor = () => {
     }, 0);
   };
 
+  const goToNextMatch = () => {
+    if (searchMatches.length > 0) {
+      const nextIndex = (currentMatchIndex + 1) % searchMatches.length;
+      setCurrentMatchIndex(nextIndex);
+      highlightMatch(searchMatches[nextIndex]);
+    }
+  };
+
+  const goToPrevMatch = () => {
+    if (searchMatches.length > 0) {
+      const prevIndex = currentMatchIndex === 0 ? searchMatches.length - 1 : currentMatchIndex - 1;
+      setCurrentMatchIndex(prevIndex);
+      highlightMatch(searchMatches[prevIndex]);
+    }
+  };
+
+  const highlightMatch = (match) => {
+    if (textareaRef.current && match) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(match.index, match.index + match.text.length);
+      textareaRef.current.scrollTop = Math.max(0, textareaRef.current.scrollHeight * (match.index / content.length) - 100);
+    }
+  };
+
+  useEffect(() => {
+    if (searchMatches.length > 0 && searchQuery) {
+      highlightMatch(searchMatches[currentMatchIndex]);
+    }
+  }, [currentMatchIndex, searchMatches, searchQuery]);
+
   if (!currentNote) {
     return (
       <div className="editor-empty">
@@ -131,6 +206,52 @@ const NoteEditor = () => {
         noteType={noteType}
         onChangeNoteType={handleChangeNoteType}
       />
+
+      {showSearch && (
+        <div className="note-search-bar">
+          <Search size={16} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search in note..."
+            className="note-search-input"
+            autoFocus
+          />
+          <div className="search-navigation">
+            <span className="search-count">
+              {searchMatches.length > 0 ? `${currentMatchIndex + 1}/${searchMatches.length}` : '0'}
+            </span>
+            <button
+              onClick={goToPrevMatch}
+              disabled={searchMatches.length === 0}
+              className="btn-icon-small"
+              title="Previous match"
+            >
+              <ChevronUp size={16} />
+            </button>
+            <button
+              onClick={goToNextMatch}
+              disabled={searchMatches.length === 0}
+              className="btn-icon-small"
+              title="Next match"
+            >
+              <ChevronDown size={16} />
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setShowSearch(false);
+              setSearchQuery('');
+              setSearchMatches([]);
+            }}
+            className="btn-icon-small"
+            title="Close search"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       <div className="editor-header">
         <input
@@ -184,6 +305,7 @@ const NoteEditor = () => {
         </div>
       ) : (
         <textarea
+          ref={textareaRef}
           id="note-content"
           value={content}
           onChange={handleContentChange}

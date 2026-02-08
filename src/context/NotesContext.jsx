@@ -23,6 +23,16 @@ export const NotesProvider = ({ children }) => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
+  const [viewMode, setViewMode] = useState(() => {
+    const saved = localStorage.getItem('viewMode');
+    return saved || 'card';
+  });
+  const [fontSize, setFontSize] = useState(() => {
+    const saved = localStorage.getItem('fontSize');
+    return saved || 'medium';
+  });
+  const [focusMode, setFocusMode] = useState(false);
+  const [recentNotes, setRecentNotes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,6 +47,33 @@ export const NotesProvider = ({ children }) => {
       document.body.classList.remove('dark-mode');
     }
   }, [darkMode]);
+
+  useEffect(() => {
+    localStorage.setItem('viewMode', viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    localStorage.setItem('fontSize', fontSize);
+    document.documentElement.setAttribute('data-font-size', fontSize);
+  }, [fontSize]);
+
+  useEffect(() => {
+    if (focusMode) {
+      document.body.classList.add('focus-mode');
+    } else {
+      document.body.classList.remove('focus-mode');
+    }
+  }, [focusMode]);
+
+  // Update recent notes when currentNote changes
+  useEffect(() => {
+    if (currentNote) {
+      setRecentNotes(prev => {
+        const filtered = prev.filter(id => id !== currentNote.id);
+        return [currentNote.id, ...filtered].slice(0, 5);
+      });
+    }
+  }, [currentNote]);
 
   const loadNotes = () => {
     try {
@@ -74,6 +111,7 @@ export const NotesProvider = ({ children }) => {
         category: noteData.category || 'General',
         type: noteData.type || 'note',
         todos: noteData.todos || [],
+        color: noteData.color || null,
         is_pinned: false,
         is_favorite: false,
         is_deleted: false,
@@ -137,6 +175,7 @@ export const NotesProvider = ({ children }) => {
       content: noteToDuplicate.content,
       tags: noteToDuplicate.tags,
       category: noteToDuplicate.category,
+      color: noteToDuplicate.color,
     });
   };
 
@@ -188,6 +227,12 @@ export const NotesProvider = ({ children }) => {
     return filtered;
   };
 
+  const getRecentNotesList = () => {
+    return recentNotes
+      .map(id => notes.find(n => n.id === id))
+      .filter(Boolean);
+  };
+
   const getAllTags = () => {
     const tagSet = new Set();
     notes.forEach((note) => {
@@ -214,6 +259,12 @@ export const NotesProvider = ({ children }) => {
     setActiveFilters,
     darkMode,
     setDarkMode,
+    viewMode,
+    setViewMode,
+    fontSize,
+    setFontSize,
+    focusMode,
+    setFocusMode,
     loading,
     addNote,
     updateNote,
@@ -222,6 +273,7 @@ export const NotesProvider = ({ children }) => {
     togglePin,
     toggleFavorite,
     getFilteredNotes,
+    getRecentNotesList,
     getAllTags,
     getAllCategories,
     loadNotes,
