@@ -314,7 +314,7 @@ const NoteEditor = () => {
           id="note-content"
           value={content}
           onChange={handleContentChange}
-          placeholder="Start writing... Use # for tags, ## for headings, ** for bold, * for italic"
+          placeholder="Start writing here..."
           className="editor-textarea"
         />
       )}
