@@ -20,9 +20,7 @@ import {
   Maximize,
   Type,
   Clock,
-  Play,
-  Pause,
-  RotateCcw,
+  PenTool,
 } from 'lucide-react';
 import ExportModal from './ExportModal';
 import PomodoroModal from './PomodoroModal';
@@ -65,6 +63,7 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onC
             onClick={() => onInsertMarkdown('bold')}
             className="toolbar-btn"
             title="Bold"
+            disabled={noteType !== 'note'}
           >
             <Bold size={18} />
           </button>
@@ -72,6 +71,7 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onC
             onClick={() => onInsertMarkdown('italic')}
             className="toolbar-btn"
             title="Italic"
+            disabled={noteType !== 'note'}
           >
             <Italic size={18} />
           </button>
@@ -79,6 +79,7 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onC
             onClick={() => onInsertMarkdown('code')}
             className="toolbar-btn"
             title="Code"
+            disabled={noteType !== 'note'}
           >
             <Code size={18} />
           </button>
@@ -86,6 +87,7 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onC
             onClick={() => onInsertMarkdown('heading')}
             className="toolbar-btn"
             title="Heading"
+            disabled={noteType !== 'note'}
           >
             <Heading2 size={18} />
           </button>
@@ -93,6 +95,7 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onC
             onClick={() => onInsertMarkdown('list')}
             className="toolbar-btn"
             title="List"
+            disabled={noteType !== 'note'}
           >
             <List size={18} />
           </button>
@@ -100,6 +103,7 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onC
             onClick={() => onInsertMarkdown('quote')}
             className="toolbar-btn"
             title="Quote"
+            disabled={noteType !== 'note'}
           >
             <Quote size={18} />
           </button>
@@ -122,6 +126,13 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onC
           >
             <CheckSquare size={18} />
           </button>
+          <button
+            onClick={() => onChangeNoteType('canvas')}
+            className={`toolbar-btn ${noteType === 'canvas' ? 'active' : ''}`}
+            title="Canvas Mode"
+          >
+            <PenTool size={18} />
+          </button>
         </div>
 
         <div className="toolbar-divider" />
@@ -131,6 +142,7 @@ const Toolbar = ({ onInsertMarkdown, previewMode, onTogglePreview, noteType, onC
             onClick={onTogglePreview}
             className={`toolbar-btn ${previewMode ? 'active' : ''}`}
             title={previewMode ? 'Edit Mode' : 'Preview Mode'}
+            disabled={noteType !== 'note'}
           >
             {previewMode ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>

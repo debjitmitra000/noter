@@ -52,7 +52,7 @@ const Sidebar = () => {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h1 className="sidebar-title">My Notes</h1>
+        <h1 className="sidebar-title">NOTER</h1>
         <div className="sidebar-actions">
           <div className="new-note-btn-group">
             <button 

@@ -3,6 +3,7 @@ import { useNotesContext } from '../context/NotesContext';
 import { useAutoSave } from '../hooks/useAutoSave';
 import Toolbar from './Toolbar';
 import ChecklistEditor from './ChecklistEditor';
+import CanvasEditor from './CanvasEditor';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -192,6 +193,10 @@ const NoteEditor = () => {
 
   if (noteType === 'checklist') {
     return <ChecklistEditor />;
+  }
+
+  if (noteType === 'canvas') {
+    return <CanvasEditor />;
   }
 
   const wordCount = countWords(content);

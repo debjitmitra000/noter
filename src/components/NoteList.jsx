@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNotesContext } from '../context/NotesContext';
 import { Star, Trash2, Pin, Palette } from 'lucide-react';
-import { getRelativeTime, generatePreview, generateChecklistPreview } from '../utils/helpers';
+import { getRelativeTime, generatePreview, generateChecklistPreview, generateCanvasPreview } from '../utils/helpers';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import ColorPicker from './ColorPicker';
 
@@ -76,9 +76,14 @@ const NoteList = () => {
     <>
       <div className={`notes-list ${viewMode === 'list' ? 'list-view' : 'card-view'}`}>
         {filteredNotes.map((note) => {
-          const preview = note.type === 'checklist' 
-            ? generateChecklistPreview(note.todos || [])
-            : generatePreview(note.content);
+          let preview;
+          if (note.type === 'canvas') {
+            preview = generateCanvasPreview(note.canvasElements || []);
+          } else if (note.type === 'checklist') {
+            preview = generateChecklistPreview(note.todos || []);
+          } else {
+            preview = generatePreview(note.content);
+          }
 
           return (
             <div

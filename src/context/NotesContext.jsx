@@ -111,6 +111,7 @@ export const NotesProvider = ({ children }) => {
         category: noteData.category || 'General',
         type: noteData.type || 'note',
         todos: noteData.todos || [],
+        canvasElements: noteData.canvasElements || [], // Added canvas support
         color: noteData.color || null,
         is_pinned: false,
         is_favorite: false,
@@ -175,6 +176,9 @@ export const NotesProvider = ({ children }) => {
       content: noteToDuplicate.content,
       tags: noteToDuplicate.tags,
       category: noteToDuplicate.category,
+      type: noteToDuplicate.type,
+      todos: noteToDuplicate.todos ? JSON.parse(JSON.stringify(noteToDuplicate.todos)) : [],
+      canvasElements: noteToDuplicate.canvasElements ? JSON.parse(JSON.stringify(noteToDuplicate.canvasElements)) : [], // Deep copy canvas elements
       color: noteToDuplicate.color,
     });
   };

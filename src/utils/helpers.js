@@ -30,6 +30,41 @@ export const generateChecklistPreview = (todos) => {
   return `${completedCount}/${totalCount} items • ${preview}`;
 };
 
+export const generateCanvasPreview = (elements) => {
+  if (!elements || elements.length === 0) {
+    return 'Empty canvas';
+  }
+
+  const elementTypes = {
+    pencil: 0,
+    line: 0,
+    rectangle: 0,
+    circle: 0,
+    arrow: 0,
+    text: 0,
+  };
+
+  elements.forEach((element) => {
+    if (elementTypes.hasOwnProperty(element.type)) {
+      elementTypes[element.type]++;
+    }
+  });
+
+  const parts = [];
+  if (elementTypes.pencil > 0) parts.push(`${elementTypes.pencil} drawing${elementTypes.pencil > 1 ? 's' : ''}`);
+  if (elementTypes.text > 0) parts.push(`${elementTypes.text} text${elementTypes.text > 1 ? 's' : ''}`);
+  if (elementTypes.line > 0) parts.push(`${elementTypes.line} line${elementTypes.line > 1 ? 's' : ''}`);
+  if (elementTypes.arrow > 0) parts.push(`${elementTypes.arrow} arrow${elementTypes.arrow > 1 ? 's' : ''}`);
+  if (elementTypes.rectangle > 0) parts.push(`${elementTypes.rectangle} rectangle${elementTypes.rectangle > 1 ? 's' : ''}`);
+  if (elementTypes.circle > 0) parts.push(`${elementTypes.circle} circle${elementTypes.circle > 1 ? 's' : ''}`);
+
+  if (parts.length === 0) {
+    return `Canvas with ${elements.length} element${elements.length !== 1 ? 's' : ''}`;
+  }
+
+  return parts.slice(0, 2).join(', ') + (parts.length > 2 ? '...' : '');
+};
+
 export const getRelativeTime = (timestamp) => {
   const now = new Date();
   const date = new Date(timestamp);
