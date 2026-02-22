@@ -26,6 +26,7 @@ const ChecklistEditor = () => {
   const [editingId, setEditingId] = useState(null);
   const [editingText, setEditingText] = useState('');
   const [draggedItem, setDraggedItem] = useState(null);
+  const [collapsedHeadings, setCollapsedHeadings] = useState({});
 
   const { save, saving } = useAutoSave(async (data) => {
     if (currentNote) {
@@ -207,6 +208,10 @@ const ChecklistEditor = () => {
   const getSubtasks = (parentId) =>
     todos.filter((todo) => todo.parentId === parentId);
 
+  const toggleHeadingCollapse = (id) => {
+    setCollapsedHeadings((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   // Render text with clickable URLs — opens in new tab
   const renderTextWithLinks = (text) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -280,6 +285,9 @@ const ChecklistEditor = () => {
             </div>
           ) : (
             <>
+              <button className="collapse-btn" onClick={() => toggleHeadingCollapse(item.id)} title="Collapse section">
+                {collapsedHeadings[item.id] ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+              </button>
               <h3 className="todo-heading-text">{renderTextWithLinks(item.text)}</h3>
               <div className="todo-item-actions">
                 <button className="btn-icon-small" onClick={() => startEditing(item)} title="Edit heading">
@@ -457,7 +465,19 @@ const ChecklistEditor = () => {
       </div>
 
       <div className="todos-list">
-        {todos.filter((item) => !item.parentId).map((item) => renderTodoItem(item))}
+        {(() => {
+          let activeCollapsedHeadingId = null;
+          return todos
+            .filter((item) => !item.parentId)
+            .map((item) => {
+              if (item.type === 'heading') {
+                activeCollapsedHeadingId = collapsedHeadings[item.id] ? item.id : null;
+                return renderTodoItem(item);
+              }
+              if (activeCollapsedHeadingId) return null;
+              return renderTodoItem(item);
+            });
+        })()}
       </div>
 
       <div className="checklist-input-section">
